@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
+import { devLoginEnabled, devLinkPassword, devSignIn } from './dev';
 
 /** Sign-in with a one-time code sent by email (no passwords). */
 export default function LoginPage() {
@@ -12,6 +13,11 @@ export default function LoginPage() {
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [dev, setDev] = useState(false);
+
+  useEffect(() => {
+    devLoginEnabled().then(setDev).catch(() => {});
+  }, []);
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -33,10 +39,26 @@ export default function LoginPage() {
     setError('');
     if (!/^\d{6}$/.test(code.trim())) return setError('הקוד הוא 6 ספרות.');
     setBusy(true);
+    if (dev) {
+      const r = await devSignIn(email, code);
+      if (r.ok) {
+        router.replace('/');
+        router.refresh();
+        return;
+      }
+      if (r.needsRealCodeOnce) {
+        setBusy(false);
+        return setError('קוד הפיתוח עוד לא מחובר לחשבון הזה. היכנסו פעם אחת עם הקוד מהמייל, ומאז קוד הפיתוח יעבוד.');
+      }
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
+    if (error) {
+      setBusy(false);
+      return setError('הקוד שגוי או שפג תוקפו. אפשר לבקש קוד חדש.');
+    }
+    if (dev) await devLinkPassword().catch(() => {});
     setBusy(false);
-    if (error) return setError('הקוד שגוי או שפג תוקפו. אפשר לבקש קוד חדש.');
     router.replace('/');
     router.refresh();
   }
@@ -56,6 +78,12 @@ export default function LoginPage() {
               </label>
               {error && <p className="text-sm text-bad" role="alert">{error}</p>}
               <button className="btn-primary" disabled={busy}>{busy ? 'שולח…' : 'שליחת קוד'}</button>
+              {dev && (
+                <button type="button" className="text-sm font-semibold text-green" onClick={() => {
+                  if (!/^\S+@\S+\.\S+$/.test(email)) return setError('כתבו כתובת מייל תקינה.');
+                  setError(''); setStep('code');
+                }}>מצב פיתוח: כניסה עם קוד קבוע, בלי מייל</button>
+              )}
             </form>
           ) : (
             <form onSubmit={verify} className="mt-5 grid gap-4" noValidate>
