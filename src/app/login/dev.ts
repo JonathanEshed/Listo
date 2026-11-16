@@ -1,40 +1,51 @@
 'use server';
+import { headers } from 'next/headers';
+import { createClient as createAdmin } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 
 /**
- * Development-only shortcut: type a fixed code (e.g. 123456) instead of waiting for an email.
+ * Localhost-only shortcut: sign in with a fixed code (DEV_LOGIN_CODE, e.g. 123456) and no email.
  *
- * How it works: after one real email-code sign-in on this machine, the account gets a long random
- * password that lives only in .env.local (DEV_LOGIN_PASSWORD). From then on the fixed code
- * (DEV_LOGIN_CODE) signs in with that password. The short code itself is never a password.
- *
- * Off unless `npm run dev` is running AND both variables are set. Never set them on Vercel.
+ * Works only when ALL of these hold:
+ *   - the app runs with `npm run dev`;
+ *   - the page is opened on localhost / 127.0.0.1;
+ *   - .env.local has DEV_LOGIN_CODE and SUPABASE_SECRET_KEY.
+ * The secret key stays in .env.local on your own computer. Never set these two on Vercel.
  */
 function config() {
   const code = process.env.DEV_LOGIN_CODE;
-  const password = process.env.DEV_LOGIN_PASSWORD;
-  const on = process.env.NODE_ENV === 'development' && !!code && !!password && password.length >= 16;
-  return on ? { code: code!, password: password! } : null;
+  const secret = process.env.SUPABASE_SECRET_KEY;
+  if (process.env.NODE_ENV !== 'development' || !code || !secret) return null;
+  const host = (headers().get('host') ?? '').split(':')[0];
+  if (host !== 'localhost' && host !== '127.0.0.1') return null;
+  return { code, secret };
 }
 
 export async function devLoginEnabled(): Promise<boolean> {
   return config() !== null;
 }
 
-/** Signs in with the fixed dev code. Returns false when the code doesn't apply, so the caller tries the real OTP. */
-export async function devSignIn(email: string, code: string): Promise<{ ok: boolean; needsRealCodeOnce?: boolean }> {
+export async function devSignIn(email: string, code: string): Promise<{ ok: boolean; error?: string }> {
   const c = config();
-  if (!c || code.trim() !== c.code) return { ok: false };
-  const supabase = createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: c.password });
-  if (error) return { ok: false, needsRealCodeOnce: true };
-  return { ok: true };
-}
+  if (!c) return { ok: false };
+  if (code.trim() !== c.code) return { ok: false, error: 'במצב פיתוח הקוד הוא ' + c.code + '.' };
+  const address = email.trim().toLowerCase();
 
-/** After a real email-code sign-in in development, link the dev password so the fixed code works next time. */
-export async function devLinkPassword(): Promise<void> {
-  const c = config();
-  if (!c) return;
+  // Ask Supabase (with the secret key, server-side only) for a fresh one-time code, then use it right away.
+  const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, c.secret, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  let link = await admin.auth.admin.generateLink({ type: 'magiclink', email: address });
+  if (link.error) {
+    // first time for this address: create the user, then try again
+    await admin.auth.admin.createUser({ email: address, email_confirm: true });
+    link = await admin.auth.admin.generateLink({ type: 'magiclink', email: address });
+  }
+  const otp = link.data?.properties?.email_otp;
+  if (link.error || !otp) return { ok: false, error: 'כניסת הפיתוח נכשלה: ' + (link.error?.message ?? 'no code') };
+
   const supabase = createClient();
-  await supabase.auth.updateUser({ password: c.password });
+  const { error } = await supabase.auth.verifyOtp({ email: address, token: otp, type: 'email' });
+  if (error) return { ok: false, error: 'כניסת הפיתוח נכשלה: ' + error.message };
+  return { ok: true };
 }

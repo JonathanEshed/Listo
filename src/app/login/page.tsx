@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Logo } from '@/components/Logo';
-import { devLoginEnabled, devLinkPassword, devSignIn } from './dev';
+import { devLoginEnabled, devSignIn } from './dev';
 
 /** Sign-in with a one-time code sent by email (no passwords). */
 export default function LoginPage() {
@@ -23,6 +23,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError('כתבו כתובת מייל תקינה.');
+    if (dev) return setStep('code'); // localhost dev mode: no email is sent
     setBusy(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
@@ -41,24 +42,16 @@ export default function LoginPage() {
     setBusy(true);
     if (dev) {
       const r = await devSignIn(email, code);
-      if (r.ok) {
-        router.replace('/');
-        router.refresh();
-        return;
-      }
-      if (r.needsRealCodeOnce) {
-        setBusy(false);
-        return setError('קוד הפיתוח עוד לא מחובר לחשבון הזה. היכנסו פעם אחת עם הקוד מהמייל, ומאז קוד הפיתוח יעבוד.');
-      }
+      setBusy(false);
+      if (!r.ok) return setError(r.error ?? 'כניסת הפיתוח נכשלה.');
+      router.replace('/');
+      router.refresh();
+      return;
     }
     const supabase = createClient();
     const { error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
-    if (error) {
-      setBusy(false);
-      return setError('הקוד שגוי או שפג תוקפו. אפשר לבקש קוד חדש.');
-    }
-    if (dev) await devLinkPassword().catch(() => {});
     setBusy(false);
+    if (error) return setError('הקוד שגוי או שפג תוקפו. אפשר לבקש קוד חדש.');
     router.replace('/');
     router.refresh();
   }
@@ -78,16 +71,14 @@ export default function LoginPage() {
               </label>
               {error && <p className="text-sm text-bad" role="alert">{error}</p>}
               <button className="btn-primary" disabled={busy}>{busy ? 'שולח…' : 'שליחת קוד'}</button>
-              {dev && (
-                <button type="button" className="text-sm font-semibold text-green" onClick={() => {
-                  if (!/^\S+@\S+\.\S+$/.test(email)) return setError('כתבו כתובת מייל תקינה.');
-                  setError(''); setStep('code');
-                }}>מצב פיתוח: כניסה עם קוד קבוע, בלי מייל</button>
-              )}
             </form>
           ) : (
             <form onSubmit={verify} className="mt-5 grid gap-4" noValidate>
-              <p className="muted text-sm">שלחנו קוד בן 6 ספרות ל־<span dir="ltr" className="font-semibold text-ink">{email}</span>.</p>
+              {dev ? (
+                <p className="muted text-sm">מצב פיתוח (localhost): לא נשלח מייל. הקלידו את קוד הפיתוח.</p>
+              ) : (
+                <p className="muted text-sm">שלחנו קוד בן 6 ספרות ל־<span dir="ltr" className="font-semibold text-ink">{email}</span>.</p>
+              )}
               <label className="field">
                 הקוד
                 <input className="input text-center text-xl tracking-[.5em] num" inputMode="numeric" autoComplete="one-time-code" maxLength={6} dir="ltr" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />

@@ -54,6 +54,11 @@ http.createServer((req, res) => {
   const send = (code, body, headers = {}) => { res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*', ...headers }); res.end(body === undefined ? '' : JSON.stringify(body)); };
   if (req.method === 'OPTIONS') return send(204, undefined, { 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' });
   if (url.pathname === '/auth/v1/user') return send(200, user);
+  if (url.pathname === '/auth/v1/admin/generate_link') return send(200, { ...user, action_link: '', email_otp: '111111', hashed_token: 'x', verification_type: 'magiclink', redirect_to: '' });
+  if (url.pathname === '/auth/v1/verify') {
+    const now = Math.floor(Date.now() / 1000);
+    return send(200, { access_token: 'mock', refresh_token: 'mock', token_type: 'bearer', expires_in: 31536000, expires_at: now + 31536000, user });
+  }
   if (url.pathname.startsWith('/auth/v1/')) return send(200, {});
   const m = url.pathname.match(/^\/rest\/v1\/(rpc\/)?([a-z_]+)/);
   if (!m) return send(404, { message: 'not found' });
