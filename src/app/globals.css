@@ -17,7 +17,13 @@ h1, h2, h3 { font-family: Rubik, Heebo, system-ui, sans-serif; letter-spacing: -
   .card { @apply rounded-card border border-green bg-white; }
   .card-mint { @apply rounded-card border border-green bg-mint; }
   .field { @apply grid gap-1.5 text-sm font-semibold; }
-  .input { @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-base font-normal outline-none transition focus:border-green; }
+  .input { @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-base font-normal outline-none transition duration-150 ease-out focus:border-green focus:ring-4 focus:ring-green/10; }
+  .input-lg { @apply h-[52px] w-full rounded-[14px] border border-[#DCD8CC] bg-white px-4 text-[17px] font-normal text-ink outline-none transition duration-150 ease-out placeholder:text-[#A3A89F] hover:border-[#C7C2B4] focus:border-green focus:ring-4 focus:ring-green/10; }
+  .ob-title { @apply mt-2 font-head text-[30px] font-bold leading-[1.15] tracking-[-0.02em] text-ink sm:text-[38px]; }
+  .ob-lead { @apply mt-3 max-w-[52ch] text-[17px] leading-relaxed text-muted; }
+  .tile { @apply relative block rounded-2xl border border-[#DCD8CC] bg-white p-4 text-right text-ink transition duration-200 ease-out hover:border-green/50 active:scale-[.985]; }
+  .tile-on { @apply border-green bg-[#F6F8F5] shadow-[0_0_0_1px_#22392F]; }
+  .stepper { @apply grid h-10 w-10 place-items-center rounded-full text-xl text-green transition hover:bg-mint active:scale-90; }
   .eyebrow { @apply text-[13px] font-bold tracking-wide text-ochre; }
   .h1 { @apply font-head text-3xl font-bold sm:text-4xl; }
   .muted { @apply text-muted; }
@@ -26,4 +32,17 @@ h1, h2, h3 { font-family: Rubik, Heebo, system-ui, sans-serif; letter-spacing: -
 }
 
 :focus-visible { outline: 3px solid #D9A266; outline-offset: 2px; }
+.input:focus-visible, .input-lg:focus-visible { outline: none; }
+/* motion: short, ease-out, never in the way */
+@keyframes stepInF { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes stepInB { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes reveal { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes shake { 0%,100% { transform: none; } 25% { transform: translateX(4px); } 75% { transform: translateX(-4px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.step-in-fwd { animation: stepInF .32s cubic-bezier(.23,1,.32,1) both; }
+.step-in-back { animation: stepInB .32s cubic-bezier(.23,1,.32,1) both; }
+.reveal { animation: reveal .22s cubic-bezier(.23,1,.32,1) both; }
+.shake { animation: shake .28s ease-out; }
+.rise { animation: rise .45s cubic-bezier(.23,1,.32,1) both; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

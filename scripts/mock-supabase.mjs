@@ -9,7 +9,12 @@ const now = Date.now();
 const ago = (h) => new Date(now - h * 3600e3).toISOString();
 const agent = (id, full_name, office_name, extra = {}) => ({ id, email: `${id.slice(-1)}@example.com`, full_name, phone: '050-0000000', office_name, office_kind: 'independent', license_number: '1234' + id.slice(-1), city: 'רמת גן', status: 'verified', is_admin: false, is_founder: false, offer_kind: 'pct', offer_pct: 50, onboarded_at: ago(200), created_at: ago(300), ...extra });
 const profiles = [
-  agent(ME, 'נועה לוי', 'לוי נכסים', { is_admin: true, is_founder: true }),
+  agent(ME, 'נועה לוי', 'לוי נכסים', {
+    is_admin: true, is_founder: true,
+    // MOCK_ME=new → onboarding screen; MOCK_ME=pending → waiting-for-verification screen
+    ...(process.env.MOCK_ME === 'new' ? { full_name: '', phone: null, license_number: null, office_name: null, city: null, offer_kind: null, offer_pct: null, onboarded_at: null, status: 'pending', is_admin: false } : {}),
+    ...(process.env.MOCK_ME === 'pending' ? { status: 'pending', is_admin: false } : {}),
+  }),
   agent('00000000-0000-0000-0000-00000000000b', 'אבי כהן (דוגמה)', 'כהן נכסים'),
   agent('00000000-0000-0000-0000-00000000000c', 'מיכל ברק (דוגמה)', 'עצמאית'),
   agent('00000000-0000-0000-0000-00000000000d', 'דני פרץ (דוגמה)', 'פרץ ושות׳', { status: 'pending', created_at: ago(5) }),
