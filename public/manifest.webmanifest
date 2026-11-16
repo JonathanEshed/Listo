@@ -1,0 +1,16 @@
+{
+  "name": "Listo · תיווך שיתופי",
+  "short_name": "Listo",
+  "description": "מאגר נכסים וקונים משותף למתווכים, עם הסכם שיתוף פעולה אחד.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#22392F",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

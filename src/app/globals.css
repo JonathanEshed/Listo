@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+html, body { background: #fff; color: #1D2A24; }
+body { font-family: Heebo, system-ui, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: Rubik, Heebo, system-ui, sans-serif; letter-spacing: -0.01em; text-wrap: balance; }
+
+@layer components {
+  .wrap { @apply mx-auto w-full max-w-5xl px-4 sm:px-6; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[15px] font-bold transition duration-150 ease-out active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-green text-cream hover:bg-green-2; }
+  .btn-ghost { @apply btn text-green ring-[1.5px] ring-inset ring-green hover:bg-mint; }
+  .btn-ochre { @apply btn bg-ochre-light text-ink hover:brightness-105; }
+  .btn-danger { @apply btn text-bad ring-[1.5px] ring-inset ring-bad hover:bg-red-50; }
+  .card { @apply rounded-card border border-green bg-white; }
+  .card-mint { @apply rounded-card border border-green bg-mint; }
+  .field { @apply grid gap-1.5 text-sm font-semibold; }
+  .input { @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-base font-normal outline-none transition focus:border-green; }
+  .eyebrow { @apply text-[13px] font-bold tracking-wide text-ochre; }
+  .h1 { @apply font-head text-3xl font-bold sm:text-4xl; }
+  .muted { @apply text-muted; }
+  .pill { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold; }
+  .num { font-variant-numeric: tabular-nums; }
+}
+
+:focus-visible { outline: 3px solid #D9A266; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
